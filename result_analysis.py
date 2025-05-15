@@ -1,4 +1,5 @@
 import re
+import sys
 
 from utils import get_labels_true
 
@@ -77,6 +78,7 @@ def cost_analysis(log_file: str):
 
 
 if __name__ == "__main__":
-    cost_analysis("")
-    classification_analysis("")
-    logic_chain_triggering_analysis("")
+    log_file_path = sys.argv[1]
+    cost_analysis(log_file_path)
+    classification_analysis(log_file_path)
+    logic_chain_triggering_analysis(log_file_path)

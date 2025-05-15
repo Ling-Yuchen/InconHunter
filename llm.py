@@ -48,3 +48,6 @@ def encode_image(image_path: str) -> str:
         return base64.b64encode(image_file.read()).decode("utf-8")
 
 
+if __name__ == "__main__":
+    r, _, _, _, _ = query("hello")
+    print(r)
