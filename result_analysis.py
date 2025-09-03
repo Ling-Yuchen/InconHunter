@@ -38,29 +38,29 @@ def classification_analysis(log_file: str):
                 report_id = match.group(1)
                 consistent = True if line.strip().endswith("True") else False
                 pred_dict[report_id] = consistent
-    yy, nn, yn, ny = 0, 0, 0, 0
+    tp, tn, fp, fn = 0, 0, 0, 0
     for k, v in pred_dict.items():
         pred, true = v, true_dict[k]
         if pred and true:
-            yy += 1
+            tp += 1
         elif not pred and not true:
-            nn += 1
+            tn += 1
         elif pred and not true:
-            ny += 1
+            fp += 1
         elif not pred and true:
-            yn += 1
-    print(f"yy = {yy}\nnn = {nn}\nyn = {yn}\nny = {ny}\ntotal = {yy+nn+ny+yn}")
-    print(f"accuracy = {(yy + nn) / (yy + nn + ny + yn)}")
-    print(f"precision = {yy / (yy + yn)}")
-    print(f"recall = {yy / (yy + ny)}")
-    print(f"f1-score = {2 * yy / (2 * yy + ny + yn)}")
+            fn += 1
+    print(f"tp = {tp}\ntn = {tn}\nfp = {fp}\nfn = {fn}\ntotal = {tp + tn + fp + fn}")
+    print(f"accuracy = {(tp + tn) / (tp + tn + fp + fn)}")
+    print(f"precision = {tp / (tp + fp)}")
+    print(f"recall = {tp / (tp + fn)}")
+    print(f"f1-score = {2 * tp / (2 * tp + fp + fn)}")
 
 def cost_analysis(log_file: str):
     total = 0
     money_usage, token_usage = [], []
     with open(log_file, mode="r", encoding="utf-8") as f:
         pattern1 = r"Input token: (\d+) \(\$(\d+\.\d+)\); Output token: (\d+) \(\$(\d+\.\d+)\)"
-        pattern2 = "Report #(\d+) from App-(\d+) Consistent?"
+        pattern2 = "Report #(\d+) Consistent?"
         for line in f.readlines():
             match1 = re.search(pattern1, line)
             match2 = re.search(pattern2, line)

@@ -7,9 +7,13 @@ from openai import OpenAI
 api_price = {
     "gpt-4o-mini": {"input": 0.00000015, "output": 0.0000006},
     "gpt-4o": {"input": 0.0000025, "output": 0.00001},
+    "qwen-vl-max": {"input": 0.00000042, "output": 0.00000126},
+    "qwen-plus": {"input": 0.000000112, "output": 0.00000112},
 }
 
 gpt_client = OpenAI()
+
+qwen_client = OpenAI()
 
 
 def query(
@@ -29,12 +33,20 @@ def query(
         {"type": "image_url", "image_url": {"url": user_msg_img, "detail": "high"}}
     ]
     messages.append({"role": "user", "content": user_content})
-    response = gpt_client.chat.completions.create(
-        model=model,
-        messages=messages,
-        temperature=temperature,
-        response_format={"type": "json_object"}
-    )
+    if model.startswith("gpt"):
+        response = gpt_client.chat.completions.create(
+            model=model,
+            messages=messages,
+            temperature=temperature,
+            response_format={"type": "json_object"}
+        )
+    else:
+        response = qwen_client.chat.completions.create(
+            model=model,
+            messages=messages,
+            temperature=temperature,
+            response_format={"type": "json_object"}
+        )
     response_content = response.choices[0].message.content
     response_dict = json.loads(response_content)
     output_usage = response.usage.completion_tokens

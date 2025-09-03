@@ -14,6 +14,7 @@ def load_reports():
     dataset_file = str(dataset_base / "dataset.txt")
     with open(dataset_file, mode="r", encoding="utf-8") as f:
         dataset = json.load(f)
+    return dataset
 
 def get_labels_true():
     labels_true = {}

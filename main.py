@@ -37,6 +37,7 @@ Return a brief JSON response: {result: true/false, reason: <one-short-sentence e
         self.prompt3 = """You are a professional assistant reviewing crowdsourced test reports.
 You will be given a description of a test issue and a set of OCR detection result of the screenshot.
 Check if the OCR detection result contains information that aligns the issue description.
+Before making a decision, think step by step: first hypothesize what UI text features you would expect to see based on the issue description, then check whether these features appear in the OCR result.
 Note that:
   1. For issues involving "comparison between different state of the app", static OCR result is not enough to describe and you should return false.
   2. For issues involving "expected content v.s. actual content", you should ignore the first rule in note.
@@ -46,6 +47,7 @@ Return a brief JSON response: {result: true/false, reason: <one-short-sentence e
         self.prompt4 = """You are a professional assistant reviewing crowdsourced test reports.
 You will be given a description of a test issue and a corresponding screenshot.
 Check if the app GUI in screenshot is consistent with the described issue (i.e., the screenshot **visually and precisely** reflects (part of) the issue).
+Before making a decision, think step by step: first hypothesize what visual features you would expect to see in the screenshot based on the issue description, then verify whether these features are actually present.
 Note that:
   1. For performance issues, if blank/black screen or screen dimming or unrendered content is provided, you should return true.
   2. Do not focus on the triggering operations or appearance frequency in the issue, focus on the bug behavior itself.
@@ -101,7 +103,7 @@ Return a brief JSON response: {result: true/false, reason: <reason for your judg
     def visible_in_screenshot(self, report_txt: str) -> bool:
         """区分报告的bug是否存在显式的界面表现"""
         result, in_use, out_use, in_cost, out_cost = \
-            query(user_msg_txt=report_txt, system_msg=self.prompt1, model="gpt-4o-mini")
+            query(user_msg_txt=report_txt, system_msg=self.prompt1, model="qwen-plus")
         logger.info(result)
         logger.info(f"Input token: {in_use} (${in_cost:6f}); Output token: {out_use} (${out_cost:6f})")
         return result["result"]
@@ -111,7 +113,7 @@ Return a brief JSON response: {result: true/false, reason: <reason for your judg
         """根据OCR识别结果验证报告的bug是否存在显式的界面表现"""
         prompt = f"Description: {report_txt}\nText Snippets: [{','.join(t for t in screen_txt)}]"
         result, in_use, out_use, in_cost, out_cost = \
-            query(user_msg_txt=prompt, system_msg=self.prompt5, model="gpt-4o-mini")
+            query(user_msg_txt=prompt, system_msg=self.prompt5, model="qwen-plus")
         logger.info(result)
         logger.info(f"Input token: {in_use} (${in_cost:6f}); Output token: {out_use} (${out_cost:6f})")
         return not result["result"]
@@ -120,7 +122,7 @@ Return a brief JSON response: {result: true/false, reason: <reason for your judg
     def direct_reflect_from_ui_text(self, report_txt: str) -> bool:
         """判断是否能仅通过文本语义匹配来确认一致性"""
         result, in_use, out_use, in_cost, out_cost = \
-            query(user_msg_txt=report_txt, system_msg=self.prompt2, model="gpt-4o-mini")
+            query(user_msg_txt=report_txt, system_msg=self.prompt2, model="qwen-plus")
         logger.info(result)
         logger.info(f"Input token: {in_use} (${in_cost:6f}); Output token: {out_use} (${out_cost:6f})")
         return result["result"]
@@ -130,7 +132,7 @@ Return a brief JSON response: {result: true/false, reason: <reason for your judg
         """使用OCR识别结果进行文本语义匹配来检测一致性"""
         prompt = f"Description: {report_txt}\nOCR Result: [{','.join(t for t in candidates)}]"
         result, in_use, out_use, in_cost, out_cost = \
-            query(user_msg_txt=prompt, system_msg=self.prompt3, model="gpt-4o-mini")
+            query(user_msg_txt=prompt, system_msg=self.prompt3, model="qwen-plus")
         logger.info(result)
         logger.info(f"Input token: {in_use} (${in_cost:6f}); Output token: {out_use} (${out_cost:6f})")
         return result["result"]
@@ -139,7 +141,7 @@ Return a brief JSON response: {result: true/false, reason: <reason for your judg
     def detect_consistency_by_vision(self, report_txt: str, report_img: str) -> bool:
         """使用MLLM直接进行bug的显式界面特征匹配来检测一致性"""
         result, in_use, out_use, in_cost, out_cost = \
-            query(user_msg_txt=report_txt, user_msg_img=report_img, system_msg=self.prompt4, model="gpt-4o")
+            query(user_msg_txt=report_txt, user_msg_img=report_img, system_msg=self.prompt4, model="qwen-vl-max")
         logger.info(result)
         logger.info(f"Input token: {in_use} (${in_cost:6f}); Output token: {out_use} (${out_cost:6f})")
         return result["result"]
@@ -149,7 +151,7 @@ Return a brief JSON response: {result: true/false, reason: <reason for your judg
         """根据OCR识别结果来描述截图所展示的页面状态"""
         prompt = f"[{','.join(t for t in screen_txt)}]"
         result, in_use, out_use, in_cost, out_cost = \
-            query(user_msg_txt=prompt, system_msg=self.prompt6, model="gpt-4o-mini")
+            query(user_msg_txt=prompt, system_msg=self.prompt6, model="qwen-plus")
         logger.info(result)
         logger.info(f"Input token: {in_use} (${in_cost:6f}); Output token: {out_use} (${out_cost:6f})")
         return result["description"]
@@ -158,7 +160,7 @@ Return a brief JSON response: {result: true/false, reason: <reason for your judg
     def detect_consistency_by_visual_state(self, report_txt: str, report_img: str) -> str:
         """根据截图所展示的页面状态来检测一致性"""
         result, in_use, out_use, in_cost, out_cost = \
-            query(user_msg_txt=report_txt, user_msg_img=report_img, system_msg=self.prompt7, model="gpt-4o")
+            query(user_msg_txt=report_txt, user_msg_img=report_img, system_msg=self.prompt7, model="qwen-vl-max")
         logger.info(result)
         logger.info(f"Input token: {in_use} (${in_cost:6f}); Output token: {out_use} (${out_cost:6f})")
         return result["result"]
@@ -168,7 +170,7 @@ Return a brief JSON response: {result: true/false, reason: <reason for your judg
         """根据页面状态的文本描述来检测一致性"""
         prompt = f"Test Issue: {report_txt}\nApp State: {description}"
         result, in_use, out_use, in_cost, out_cost = \
-            query(user_msg_txt=prompt, system_msg=self.prompt8, model="gpt-4o-mini")
+            query(user_msg_txt=prompt, system_msg=self.prompt8, model="qwen-plus")
         logger.info(result)
         logger.info(f"Input token: {in_use} (${in_cost:6f}); Output token: {out_use} (${out_cost:6f})")
         return result["result"]
@@ -176,7 +178,7 @@ Return a brief JSON response: {result: true/false, reason: <reason for your judg
     @timeit
     def preprocess(self, report_txt: str) -> bool:
         result, in_use, out_use, in_cost, out_cost = \
-            query(user_msg_txt=report_txt, system_msg=self.prompt0, model="gpt-4o-mini")
+            query(user_msg_txt=report_txt, system_msg=self.prompt0, model="qwen-plus")
         logger.info(result)
         logger.info(f"Input token: {in_use} (${in_cost:6f}); Output token: {out_use} (${out_cost:6f})")
         return result["result"]
@@ -247,7 +249,7 @@ Return a brief JSON response: {result: true/false, reason: <reason for your judg
     @timeit
     def run_with_bare_llm(self, report_id: str, report_txt: str, report_img: str):
         result, in_use, out_use, in_cost, out_cost = \
-            query(user_msg_txt=report_txt, user_msg_img=report_img, system_msg=self.prompt9, model="gpt-4o-mini")
+            query(user_msg_txt=report_txt, user_msg_img=report_img, system_msg=self.prompt9, model="qwen-vl-max")
         logger.info(result)
         logger.info(f"Input token: {in_use} (${in_cost:6f}); Output token: {out_use} (${out_cost:6f})")
         logger.info(f"Report #{report_id} Consistent? {result['result']}")
@@ -257,7 +259,7 @@ Return a brief JSON response: {result: true/false, reason: <reason for your judg
     def download_dataset():
         dataset = load_reports()
         for item in dataset:
-            download_img_from_url(item["image_url"], item["index"])
+            download_img_from_url(item["img_url"], item["index"])
 
 
 def main():
@@ -270,10 +272,10 @@ def main():
         img = str(dataset_base / "images" / f"{idx}.jpg")
         try:
             re.run(idx, text, img)
-            # re.run_without_using_ocr(app, idx, text, img)
-            # re.run_without_check_visibility(app, idx, text, img)
-            # re.run_without_verify_visibility(app, idx, text, img)
-            # re.run_with_bare_llm(app, idx, text, img)
+            # re.run_without_using_ocr(idx, text, img)
+            # re.run_without_check_visibility(idx, text, img)
+            # re.run_without_verify_visibility(idx, text, img)
+            # re.run_with_bare_llm(idx, text, img)
         except Exception as e:
             logger.warning(f"Analysis for Report #{idx} failed -- {e}")
 
